@@ -71,7 +71,7 @@ class PublicTransportVictoriaSensor(CoordinatorEntity, Entity):
         """Return the name of the sensor."""
         return "{} line to {} from {} {}".format(
             self._connector.route_name,
-            self._connector.direction_name,
+            self._connector.destination_stop_name,
             self._connector.stop_name,
             self._number,
         )
@@ -81,7 +81,7 @@ class PublicTransportVictoriaSensor(CoordinatorEntity, Entity):
         """Return Unique ID string."""
         return "{} line to {} from {} {}".format(
             self._connector.route_name,
-            self._connector.direction_name,
+            self._connector.destination_stop_name,
             self._connector.stop_name,
             self._number,
         )
