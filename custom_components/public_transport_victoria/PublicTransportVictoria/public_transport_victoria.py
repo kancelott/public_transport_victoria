@@ -228,7 +228,7 @@ def convert_utc_to_local(utc, hass):
 def calculate_delay(estimated_utc, scheduled_utc):
     """Calculate the delay between estimated and scheduled departure times."""
     # Convert the UTC strings to datetime objects
-    estimated_dt = datetime.strptime(estimated_utc, "%Y-%m-%dT%H:%M:%SZ")
-    scheduled_dt = datetime.strptime(scheduled_utc, "%Y-%m-%dT%H:%M:%SZ")
+    estimated_dt = datetime.datetime.strptime(estimated_utc, "%Y-%m-%dT%H:%M:%SZ")
+    scheduled_dt = datetime.datetime.strptime(scheduled_utc, "%Y-%m-%dT%H:%M:%SZ")
     delay = estimated_dt - scheduled_dt
     return delay.total_seconds() / 60
