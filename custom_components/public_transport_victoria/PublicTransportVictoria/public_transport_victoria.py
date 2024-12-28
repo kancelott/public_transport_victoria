@@ -173,10 +173,11 @@ class Connector:
             _LOGGER.debug(response)
             for r in response["runs"]:
                 if r['vehicle_position'] is not None:
-                    result['latitude']=r['vehicle_position']['latitude']
-                    result['longitude']=r['vehicle_position']['longitude']
+                    result['latitude'] = r['vehicle_position']['latitude']
+                    result['longitude'] = r['vehicle_position']['longitude']
                 if r['vehicle_descriptor'] is not None:
-                    result['train_type']=r['vehicle_descriptor']['description']
+                    result['train_type'] = r['vehicle_descriptor']['description']
+                result['destination'] = r['destination_name']
         
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self):
@@ -191,10 +192,10 @@ class Connector:
             _LOGGER.debug(response)
             self.departures = []
             for r in response["departures"]:
-                r['is_stopping_at_destination']=await self.async_stopping_patterns(r['run_ref'],self.destination_stop)
-                r['disruptions']=await self.async_get_disruptions(r['disruption_ids'])
-                await self.async_get_position(r['run_ref'],r)
+                r['is_stopping_at_destination'] = await self.async_stopping_patterns(r['run_ref'],self.destination_stop)
+                r['disruptions'] = await self.async_get_disruptions(r['disruption_ids'])
 
+                await self.async_get_position(r['run_ref'],r)
                 if r["estimated_departure_utc"] is not None:
                     r["departure"] = convert_utc_to_local(
                         r["estimated_departure_utc"], self.hass
