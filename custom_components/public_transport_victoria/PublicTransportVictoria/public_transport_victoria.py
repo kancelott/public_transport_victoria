@@ -24,7 +24,8 @@ ROUTE_TYPES_PATH = "/v3/route_types"
 ROUTES_PATH = "/v3/routes?route_types={}"
 STOPS_PATH = "/v3/stops/route/{}/route_type/{}"
 
-exclude_disruptions=[261006,142498]
+#exclude_disruptions=[261006,142498]
+exclude_disruptions=[]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -156,9 +157,12 @@ class Connector:
                 if response is not None and response.status == 200:
                     response = await response.json()
                     _LOGGER.debug(response)
-                    if response["disruption"] is not None:
-                        disruptions+=response['disruption']['description']+'\n'
-        return disruptions
+                    if response["disruption"] is not None
+                            and response["disruption"]["disruption_type"] is not "Service Information"
+                            and response["disruption"]["disruption_type"] is not "Planned Closure"
+                            and response["disruption"]["display_status"] is True:
+                        disruptions += response['disruption']['disruption_type'] + '; '
+        return disruptions[:-2]
         
     async def async_get_position(self,run_ref,result):
         """Get vehicle position information from Public Transport Victoria API."""
