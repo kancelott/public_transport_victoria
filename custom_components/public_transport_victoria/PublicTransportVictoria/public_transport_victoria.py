@@ -175,10 +175,17 @@ class Connector:
                 if r['vehicle_position'] is not None:
                     result['latitude'] = r['vehicle_position']['latitude']
                     result['longitude'] = r['vehicle_position']['longitude']
+                else:
+                    result['latitude'] = ''
+                    result['longitude'] = ''
+
                 if r['vehicle_descriptor'] is not None:
                     result['train_type'] = r['vehicle_descriptor']['description']
+                else:
+                    result['train_type'] = ''
+
                 result['destination'] = r['destination_name']
-        
+
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self):
         """Update the departure information."""
