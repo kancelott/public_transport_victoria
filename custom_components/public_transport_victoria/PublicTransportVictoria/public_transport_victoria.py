@@ -157,10 +157,10 @@ class Connector:
                 if response is not None and response.status == 200:
                     response = await response.json()
                     _LOGGER.debug(response)
-                    if response["disruption"] is not None and
-                            response["disruption"]["disruption_type"] is not "Service Information" and
-                            response["disruption"]["disruption_type"] is not "Planned Closure" and
-                            response["disruption"]["display_status"] is True:
+                    if response["disruption"] is not None \
+                            and response["disruption"]["disruption_type"] is not "Service Information" \
+                            and response["disruption"]["disruption_type"] is not "Planned Closure" \
+                            and response["disruption"]["display_status"] is True:
                         disruptions += response['disruption']['disruption_type'] + '; '
         return disruptions[:-2]
 
