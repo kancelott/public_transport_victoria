@@ -208,15 +208,12 @@ class Connector:
 
                 await self.async_get_position(r['run_ref'],r)
                 if r["estimated_departure_utc"] is not None:
-                    r["departure"] = convert_utc_to_local(
-                        r["estimated_departure_utc"], self.hass
-                        )
+                    r["departure_time"] = convert_utc_to_local(r["estimated_departure_utc"], self.hass)
                     r["delay"] = calculate_delay(r["estimated_departure_utc"], r["scheduled_departure_utc"])
                 else:
-                    r["departure"] = convert_utc_to_local(
-                        r["scheduled_departure_utc"], self.hass
-                        )
+                    r["departure_time"] = convert_utc_to_local(r["scheduled_departure_utc"], self.hass)
                     r["delay"] = 0
+                r["scheduled_time"] = convert_utc_to_local(r["scheduled_departure_utc"], self.hass)
                 self.departures.append(r)
 
 def build_URL(id, api_key, request):
