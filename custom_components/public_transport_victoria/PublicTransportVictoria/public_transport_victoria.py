@@ -12,7 +12,7 @@ from homeassistant.util.dt import get_time_zone
 
 BASE_URL = "https://timetableapi.ptv.vic.gov.au"
 DEPARTURES_PATH = "/v3/departures/route_type/{}/stop/{}/route/{}?direction_id={}&max_results={}"
-STOPPING_PATTERNS='/v3/pattern/run/{}/route_type/{}?expand=None&include_skipped_stops=false'
+STOPPING_PATTERNS='/v3/pattern/run/{}/route_type/{}?expand=Stop&include_skipped_stops=false'
 DISRUPTION='/v3/disruptions/{}'
 RUN='/v3/runs/{}?expand=All'
 DIRECTIONS_PATH = "/v3/directions/route/{}"
@@ -130,10 +130,10 @@ class Connector:
             _LOGGER.debug(response)
             is_stopping_at_stop_id = False
             is_city_loop = False
-            for r in response["departures"]:
-                if stop_id == r['stop_id']:
+            for _, r in response["stops"].items():
+                if stop_id == r["stop_id"]:
                     is_stopping_at_stop_id = True
-                if 'Melbourne Central' in r['stop_name']:
+                if 'Melbourne Central' in r["stop_name"]:
                     is_city_loop = True
             return (is_stopping_at_stop_id, is_city_loop)
 
@@ -196,7 +196,7 @@ class Connector:
             _LOGGER.debug(response)
             self.departures = []
             for r in response["departures"]:
-                (r['is_stopping_at_destination'], r['is_city_loop']) = await self.async_stopping_patterns(r['run_ref'],self.destination_stop)
+                (r['is_stopping_at_destination'], r['is_city_loop']) = await self.async_stopping_patterns(r['run_ref'], self.destination_stop)
                 r['disruptions'] = await self.async_get_disruptions(r['disruption_ids'])
 
                 await self.async_get_run(r['run_ref'],r)
