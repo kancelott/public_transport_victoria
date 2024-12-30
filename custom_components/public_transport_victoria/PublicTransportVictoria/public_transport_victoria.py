@@ -217,14 +217,6 @@ def build_URL(id, api_key, request):
     return url
 
 
-# def convert_utc_to_local(utc, hass):
-#     """Convert UTC to Home Assistant local time."""
-#     d = datetime.datetime.strptime(utc, "%Y-%m-%dT%H:%M:%SZ")
-#     # Get the Home Assistant configured time zone
-#     local_tz = get_time_zone(hass.config.time_zone)
-#     # Convert the time to the Home Assistant time zone
-#     d = d.replace(tzinfo=datetime.timezone.utc).astimezone(local_tz)
-#     return d.strftime("%H:%M")
 def convert_utc_to_local(utc):
     d = datetime.datetime.strptime(utc, '%Y-%m-%dT%H:%M:%SZ')
     d = d.replace(tzinfo=datetime.timezone.utc)
