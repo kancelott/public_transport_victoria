@@ -199,8 +199,10 @@ class Connector:
                 r['disruption_descs'] = await self.async_get_disruptions(r['disruption_ids'])
                 await self.async_get_run(r['run_ref'],r)
                 if r["estimated_departure_utc"] is not None:
+                    r["departure"] = convert_utc_to_local(r["estimated_departure_utc"])
                     r["delay_min"] = calculate_delay(r["estimated_departure_utc"], r["scheduled_departure_utc"])
                 else:
+                    r["departure"] = convert_utc_to_local(r["scheduled_departure_utc"])
                     r["delay_min"] = 0
                 self.departures.append(r)
 
@@ -223,8 +225,6 @@ def build_URL(id, api_key, request):
 #     # Convert the time to the Home Assistant time zone
 #     d = d.replace(tzinfo=datetime.timezone.utc).astimezone(local_tz)
 #     return d.strftime("%H:%M")
-
-
 def convert_utc_to_local(utc):
     d = datetime.datetime.strptime(utc, '%Y-%m-%dT%H:%M:%SZ')
     d = d.replace(tzinfo=datetime.timezone.utc)
