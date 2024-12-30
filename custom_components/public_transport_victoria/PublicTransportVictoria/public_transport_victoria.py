@@ -31,7 +31,7 @@ class Connector:
 
     def __init__(self, hass, id, api_key, route_type=None, route=None,
                  direction=None, stop=None, destination_stop=None, route_type_name=None,
-                 route_name=None, direction_name=None, stop_name=None,destination_stop_name=None):
+                 route_name=None, direction_name=None, stop_name=None, destination_stop_name=None):
         """Init Public Transport Victoria connector."""
         self.hass = hass
         self.id = id
@@ -62,7 +62,7 @@ class Connector:
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
-        if response is not None and response.status == 200:
+       convert_utc_to_local if response is not None and response.status == 200:
             response = await response.json()
             _LOGGER.debug(response)
             route_types = {}
@@ -187,7 +187,6 @@ class Connector:
     async def async_update(self):
         """Update the departure information."""
         url = build_URL(self.id, self.api_key, self.departures_path)
-
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
@@ -197,8 +196,7 @@ class Connector:
             self.departures = []
             for r in response["departures"]:
                 (r['is_stopping_at_destination'], r['is_city_loop']) = await self.async_stopping_patterns(r['run_ref'], self.destination_stop)
-                r['disruptions'] = await self.async_get_disruptions(r['disruption_ids'])
-
+                r['disruptions_desc'] = await self.async_get_disruptions(r['disruption_ids'])
                 await self.async_get_run(r['run_ref'],r)
                 if r["estimated_departure_utc"] is not None:
                     r["delay_min"] = calculate_delay(r["estimated_departure_utc"], r["scheduled_departure_utc"])
@@ -217,14 +215,21 @@ def build_URL(id, api_key, request):
     return url
 
 
-def convert_utc_to_local(utc, hass):
-    """Convert UTC to Home Assistant local time."""
-    d = datetime.datetime.strptime(utc, "%Y-%m-%dT%H:%M:%SZ")
-    # Get the Home Assistant configured time zone
-    local_tz = get_time_zone(hass.config.time_zone)
-    # Convert the time to the Home Assistant time zone
-    d = d.replace(tzinfo=datetime.timezone.utc).astimezone(local_tz)
-    return d.strftime("%H:%M")
+# def convert_utc_to_local(utc, hass):
+#     """Convert UTC to Home Assistant local time."""
+#     d = datetime.datetime.strptime(utc, "%Y-%m-%dT%H:%M:%SZ")
+#     # Get the Home Assistant configured time zone
+#     local_tz = get_time_zone(hass.config.time_zone)
+#     # Convert the time to the Home Assistant time zone
+#     d = d.replace(tzinfo=datetime.timezone.utc).astimezone(local_tz)
+#     return d.strftime("%H:%M")
+
+
+def convert_utc_to_local(utc):
+    d = datetime.datetime.strptime(utc, '%Y-%m-%dT%H:%M:%SZ')
+    d = d.replace(tzinfo=datetime.timezone.utc)
+    d = d.astimezone()
+    return d.strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def calculate_delay(estimated_utc, scheduled_utc):
