@@ -196,7 +196,7 @@ class Connector:
             self.departures = []
             for r in response["departures"]:
                 (r['is_stopping_at_destination'], r['is_city_loop']) = await self.async_stopping_patterns(r['run_ref'], self.destination_stop)
-                r['disruptions_desc'] = await self.async_get_disruptions(r['disruption_ids'])
+                r['disruption_descs'] = await self.async_get_disruptions(r['disruption_ids'])
                 await self.async_get_run(r['run_ref'],r)
                 if r["estimated_departure_utc"] is not None:
                     r["delay_min"] = calculate_delay(r["estimated_departure_utc"], r["scheduled_departure_utc"])
