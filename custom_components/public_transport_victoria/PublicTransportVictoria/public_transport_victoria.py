@@ -7,10 +7,8 @@ import math
 import logging
 from hashlib import sha1
 
-
 from homeassistant.util import Throttle
 from homeassistant.util.dt import get_time_zone
-
 
 BASE_URL = "https://timetableapi.ptv.vic.gov.au"
 DEPARTURES_PATH = "/v3/departures/route_type/{}/stop/{}/route/{}?direction_id={}&max_results={}"
@@ -23,9 +21,6 @@ MAX_RESULTS = 5
 ROUTE_TYPES_PATH = "/v3/route_types"
 ROUTES_PATH = "/v3/routes?route_types={}"
 STOPS_PATH = "/v3/stops/route/{}/route_type/{}"
-
-#exclude_disruptions=[261006,142498]
-exclude_disruptions=[]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +47,7 @@ class Connector:
         self.stop_name = stop_name
         self.destination_stop_name = destination_stop_name
 
+
     async def _init(self):
         """Async Init Public Transport Victoria connector."""
         self.departures_path = DEPARTURES_PATH.format(
@@ -59,10 +55,10 @@ class Connector:
         )
         await self.async_update()
 
+
     async def async_route_types(self):
         """Get route types from Public Transport Victoria API."""
         url = build_URL(self.id, self.api_key, ROUTE_TYPES_PATH)
-
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
@@ -72,13 +68,12 @@ class Connector:
             route_types = {}
             for r in response["route_types"]:
                 route_types[r["route_type"]] = r["route_type_name"]
-
             return route_types
+
 
     async def async_routes(self, route_type):
         """Get routes from Public Transport Victoria API."""
         url = build_URL(self.id, self.api_key, ROUTES_PATH.format(route_type))
-
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
@@ -88,15 +83,13 @@ class Connector:
             routes = {}
             for r in response["routes"]:
                 routes[r["route_id"]] = r["route_name"]
-
             self.route_type = route_type
-
             return routes
+
 
     async def async_directions(self, route):
         """Get directions from Public Transport Victoria API."""
         url = build_URL(self.id, self.api_key, DIRECTIONS_PATH.format(route))
-
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
@@ -106,15 +99,13 @@ class Connector:
             directions = {}
             for r in response["directions"]:
                 directions[r["direction_id"]] = r["direction_name"]
-
             self.route = route
-
             return directions
+
 
     async def async_stops(self, route):
         """Get stops from Public Transport Victoria API."""
         url = build_URL(self.id, self.api_key, STOPS_PATH.format(route, self.route_type))
-
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
@@ -124,51 +115,52 @@ class Connector:
             stops = {}
             for r in response["stops"]:
                 stops[r["stop_id"]] = r["stop_name"]
-
             self.route = route
-
             return stops
 
-    async def async_stopping_patterns(self,run_ref,stop_id):
+
+    async def async_stopping_patterns(self, run_ref, stop_id):
         """Get stopping pattern from Public Transport Victoria API."""
         url = build_URL(self.id, self.api_key, STOPPING_PATTERNS.format(run_ref, self.route_type))
-
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
         if response is not None and response.status == 200:
             response = await response.json()
             _LOGGER.debug(response)
+            is_stopping_at_stop_id = False
+            is_city_loop = False
             for r in response["departures"]:
-                if stop_id==r['stop_id']:
-                    return True
-            return False
+                if stop_id == r['stop_id']:
+                    is_stopping_at_stop_id = True
+                if 'Melbourne Central' in r['stop_name']:
+                    is_city_loop = True
+            return (is_stopping_at_stop_id, is_city_loop)
 
-    async def async_get_disruptions(self,disruption_ids):
+
+    async def async_get_disruptions(self, disruption_ids):
         """Get disruption information from Public Transport Victoria API."""
         disruptions = ''
         for disruption in disruption_ids:
-            if disruption not in exclude_disruptions:
-                url = build_URL(self.id, self.api_key, DISRUPTION.format(disruption))
+            url = build_URL(self.id, self.api_key, DISRUPTION.format(disruption))
+            async with aiohttp.ClientSession() as session:
+                response = await session.get(url)
 
-                async with aiohttp.ClientSession() as session:
-                    response = await session.get(url)
-
-                if response is not None and response.status == 200:
-                    response = await response.json()
-                    _LOGGER.debug(response)
-                    if response["disruption"] is not None \
-                            and response["disruption"]["disruption_type"] is not "Service Information" \
-                            and response["disruption"]["disruption_type"] is not "Planned Closure" \
-                            and response["disruption"]["display_status"] is True:
-                        disruptions += response['disruption']['disruption_type'] + '; '
+            if response is not None and response.status == 200:
+                response = await response.json()
+                _LOGGER.debug(response)
+                if response["disruption"] is not None \
+                        and response["disruption"]["disruption_type"] is not "Service Information" \
+                        and response["disruption"]["disruption_type"] is not "Planned Closure" \
+                        and response["disruption"]["display_status"] is True:
+                    disruptions += response['disruption']['disruption_type'] + '; '
         return disruptions[:-2]
 
-    async def async_get_position(self,run_ref,result):
-        """Get vehicle position information from Public Transport Victoria API."""
+
+    async def async_get_run(self, run_ref, result):
+        """Get specific vehicle & destination information from Public Transport Victoria API."""
         coords = {}
         url = build_URL(self.id, self.api_key, RUN.format(run_ref))
-
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
@@ -177,11 +169,11 @@ class Connector:
             _LOGGER.debug(response)
             for r in response["runs"]:
                 if r['vehicle_position'] is not None:
-                    result['latitude'] = r['vehicle_position']['latitude']
-                    result['longitude'] = r['vehicle_position']['longitude']
+                    result['train_latitude'] = r['vehicle_position']['latitude']
+                    result['train_longitude'] = r['vehicle_position']['longitude']
                 else:
-                    result['latitude'] = ''
-                    result['longitude'] = ''
+                    result['train_latitude'] = ''
+                    result['train_longitude'] = ''
 
                 if r['vehicle_descriptor'] is not None:
                     result['train_type'] = r['vehicle_descriptor']['description']
@@ -189,6 +181,7 @@ class Connector:
                     result['train_type'] = ''
 
                 result['destination'] = r['destination_name']
+
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self):
@@ -203,18 +196,16 @@ class Connector:
             _LOGGER.debug(response)
             self.departures = []
             for r in response["departures"]:
-                r['is_stopping_at_destination'] = await self.async_stopping_patterns(r['run_ref'],self.destination_stop)
+                (r['is_stopping_at_destination'], r['is_city_loop']) = await self.async_stopping_patterns(r['run_ref'],self.destination_stop)
                 r['disruptions'] = await self.async_get_disruptions(r['disruption_ids'])
 
-                await self.async_get_position(r['run_ref'],r)
+                await self.async_get_run(r['run_ref'],r)
                 if r["estimated_departure_utc"] is not None:
-                    r["departure_time"] = convert_utc_to_local(r["estimated_departure_utc"], self.hass)
-                    r["delay"] = calculate_delay(r["estimated_departure_utc"], r["scheduled_departure_utc"])
+                    r["delay_min"] = calculate_delay(r["estimated_departure_utc"], r["scheduled_departure_utc"])
                 else:
-                    r["departure_time"] = convert_utc_to_local(r["scheduled_departure_utc"], self.hass)
-                    r["delay"] = 0
-                r["scheduled_time"] = convert_utc_to_local(r["scheduled_departure_utc"], self.hass)
+                    r["delay_min"] = 0
                 self.departures.append(r)
+
 
 def build_URL(id, api_key, request):
     request = request + ('&' if ('?' in request) else '?')
@@ -225,6 +216,7 @@ def build_URL(id, api_key, request):
     _LOGGER.debug(url)
     return url
 
+
 def convert_utc_to_local(utc, hass):
     """Convert UTC to Home Assistant local time."""
     d = datetime.datetime.strptime(utc, "%Y-%m-%dT%H:%M:%SZ")
@@ -233,6 +225,7 @@ def convert_utc_to_local(utc, hass):
     # Convert the time to the Home Assistant time zone
     d = d.replace(tzinfo=datetime.timezone.utc).astimezone(local_tz)
     return d.strftime("%H:%M")
+
 
 def calculate_delay(estimated_utc, scheduled_utc):
     """Calculate the delay between estimated and scheduled departure times."""
