@@ -62,7 +62,7 @@ class Connector:
         async with aiohttp.ClientSession() as session:
             response = await session.get(url)
 
-       if response is not None and response.status == 200:
+        if response is not None and response.status == 200:
             response = await response.json()
             _LOGGER.debug(response)
             route_types = {}
