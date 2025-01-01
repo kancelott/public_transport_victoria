@@ -227,7 +227,7 @@ def convert_utc_to_local(utc, hass):
     return d.strftime('%Y-%m-%dT%H:%M:%S')
 
 
-def convert_utc_to_local_time(utc):
+def convert_utc_to_local_time(utc, hass):
     d = datetime.datetime.strptime(utc, '%Y-%m-%dT%H:%M:%SZ')
     d = d.replace(tzinfo=datetime.timezone.utc)
     d = d.astimezone(get_time_zone(hass.config.time_zone))
