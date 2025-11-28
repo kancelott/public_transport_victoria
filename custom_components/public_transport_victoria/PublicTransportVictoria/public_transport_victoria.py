@@ -141,6 +141,7 @@ class Connector:
     async def async_get_disruptions(self, disruption_ids):
         """Get disruption information from Public Transport Victoria API."""
         disruptions = ''
+        colours = ''
         for disruption in disruption_ids:
             url = build_URL(self.id, self.api_key, DISRUPTION.format(disruption))
             async with aiohttp.ClientSession() as session:
@@ -154,7 +155,8 @@ class Connector:
                         and response["disruption"]["disruption_type"] is not "Planned Closure" \
                         and response["disruption"]["display_status"] is True:
                     disruptions += response['disruption']['disruption_type'] + '; '
-        return disruptions[:-2]
+                    colours += response['disruption']['colour'] + '; '
+        return disruptions[:-2], colours[:-2]
 
 
     async def async_get_run(self, run_ref, result):
@@ -196,7 +198,7 @@ class Connector:
             self.departures = []
             for r in response["departures"]:
                 (r['is_stopping_at_destination'], r['is_city_loop']) = await self.async_stopping_patterns(r['run_ref'], self.destination_stop)
-                r['disruption_descs'] = await self.async_get_disruptions(r['disruption_ids'])
+                (r['disruption_descs'], r['disruption_colors']) = await self.async_get_disruptions(r['disruption_ids'])
                 r["scheduled"] = convert_utc_to_local_time(r["scheduled_departure_utc"], self.hass)
 
                 await self.async_get_run(r['run_ref'], r)
